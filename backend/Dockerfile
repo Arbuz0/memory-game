@@ -1,4 +1,4 @@
-# Use the official OpenJDK 17 as a parent image for building the application
+# Use the official Gradle image with JDK 17 for building the application
 FROM gradle:7.5.1-jdk17 as build-stage
 
 # Set the working directory
@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy the Gradle wrapper and the build files
 COPY gradlew .
 COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
 
 # Copy the source code
 COPY src src
@@ -17,7 +17,7 @@ COPY src src
 RUN chmod +x gradlew
 
 # Build the application
-RUN ./gradlew build --no-daemon
+RUN ./gradlew bootJar --no-daemon
 
 # Use the official OpenJDK 17 as a parent image for running the application
 FROM openjdk:17-jdk-slim
