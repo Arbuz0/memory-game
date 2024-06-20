@@ -17,11 +17,7 @@ export default {
   name: 'GameHistory',
   data() {
     return {
-      gameHistory: [
-        // Sample game history data
-        'Game 1: Won in 20 moves',
-        'Game 2: Lost in 25 moves'
-      ]
+      gameHistory: JSON.parse(localStorage.getItem('gameHistory')) || []
     };
   }
 };
