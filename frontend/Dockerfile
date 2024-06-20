@@ -1,5 +1,8 @@
-# Use the official Node.js image.
+# Use the official Node.js image with npm 7
 FROM node:14
+
+# Upgrade npm to version 7
+RUN npm install -g npm@7
 
 # Set the working directory
 WORKDIR /app
