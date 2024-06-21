@@ -1,148 +1,119 @@
 <template>
-  <div class="game-page">
-    <h1>Memory Game</h1>
-    <div class="game-board">
-      <MemoryCard
-        v-for="(card, index) in cards"
-        :key="index"
-        :value="card.value"
-        :isFlipped="card.isFlipped || matchedCards.includes(card.value)"
-        @flip="handleCardFlip(index)"
+  <div class="container">
+    <h2>Game Page</h2>
+    <div class="board">
+      <MemoryCard 
+        v-for="card in cards" 
+        :key="card.id" 
+        :value="card.value" 
+        :flipped="card.flipped" 
+        @flip="handleCardFlip" 
       />
     </div>
-    <div class="back-button">
-      <router-link to="/">
-        <button>Back to Main Menu</button>
-      </router-link>
+    <div class="messages">
+      <h3>Received Messages</h3>
+      <ul>
+        <li v-for="(message, index) in messages" :key="index">{{ message }}</li>
+      </ul>
     </div>
   </div>
 </template>
 
 <script>
-import MemoryCard from '@/components/MemoryCard.vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import MemoryCard from './MemoryCard.vue';
+import websocketService from '../services/websocket';
+import { useRoute } from 'vue-router';
 
 export default {
-  name: 'GamePage',
   components: {
     MemoryCard
   },
-  data() {
-    return {
-      cards: this.shuffleCards(),
-      flippedIndices: [],
-      matchedCards: []
+  setup() {
+    const cards = ref([]);
+    const messages = ref([]);
+    const route = useRoute();
+    const gameId = route.params.id;
+
+    const handleCardFlip = (index) => {
+      console.log('Card flipped:', index);
+      websocketService.sendMessage(gameId, { index });
     };
-  },
-  methods: {
-    shuffleCards() {
-      let values = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(i => [i, i]);
-      for (let i = values.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [values[i], values[j]] = [values[j], values[i]];
-      }
-      return values.map(value => ({ value, isFlipped: false }));
-    },
-    handleCardFlip(index) {
-      if (this.flippedIndices.length < 2 && !this.cards[index].isFlipped) {
-        this.cards[index].isFlipped = true;
-        this.flippedIndices.push(index);
 
-        if (this.flippedIndices.length === 2) {
-          const [firstIndex, secondIndex] = this.flippedIndices;
-          if (this.cards[firstIndex].value === this.cards[secondIndex].value) {
-            this.matchedCards.push(this.cards[firstIndex].value);
-            this.flippedIndices = [];
-          } else {
-            setTimeout(() => {
-              this.cards[firstIndex].isFlipped = false;
-              this.cards[secondIndex].isFlipped = false;
-              this.flippedIndices = [];
-            }, 1000);
-          }
-        }
+    const updateCards = (gameState) => {
+      cards.value = gameState.board.map((value, index) => ({
+        id: index,
+        value,
+        flipped: gameState.flipped[index]
+      }));
+    };
 
-        if (this.matchedCards.length === this.cards.length / 2) {
-          this.saveGameResult('Won');
-        }
-      }
-    },
-    saveGameResult(result) {
-      const moves = this.cards.filter(card => card.isFlipped).length;
-      const gameHistory = JSON.parse(localStorage.getItem('gameHistory')) || [];
-      gameHistory.push(`Game ${gameHistory.length + 1}: ${result} in ${moves} moves`);
-      localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
-    }
+    const onMessageReceived = (data) => {
+      console.log('Message received from server:', data);
+      messages.value.push(JSON.stringify(data));
+      const gameState = data.gameState;
+      updateCards(gameState);
+    };
+
+    const connectWebSocket = () => {
+      console.log('Connecting to WebSocket...');
+      websocketService.connectToSocket(gameId, onMessageReceived, () => {
+        console.log('Connected to WebSocket server');
+      }, (error) => {
+        console.error('WebSocket connection error:', error);
+      });
+    };
+
+    onMounted(() => {
+      console.log('Component mounted, establishing WebSocket connection...');
+      connectWebSocket();
+      // Fetch initial game state from the backend
+      fetch(`http://localhost:8080/game/${gameId}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('Initial game state fetched:', data);
+          const gameState = data.gameState;
+          updateCards(gameState);
+        })
+        .catch(error => {
+          console.error('Error fetching initial game state:', error);
+        });
+    });
+
+    onBeforeUnmount(() => {
+      console.log('Component unmounting, disconnecting WebSocket...');
+      websocketService.disconnect();
+    });
+
+    return {
+      cards,
+      messages,
+      handleCardFlip,
+    };
   }
 };
 </script>
 
 <style scoped>
-.game-page {
-  text-align: center;
-  margin-top: 50px;
-}
-
-.game-board {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-gap: 10px;
-  justify-content: center;
-  margin: 20px auto;
-  padding: 20px;
-  background-color: #ececec; /* Board background color */
-  border-radius: 10px;
-  width: fit-content;
-}
-
-.card {
-  width: 100px;
-  height: 100px; /* Adjust height to make the cards square */
-  perspective: 1000px;
-  cursor: pointer;
-}
-
-.card > div {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
-}
-
-.card .front,
-.card .back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
+.board {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
-  font-size: 2em;
 }
 
-.card .front {
-  background: #2e3b4e;
-  color: white;
-}
-
-.card .back {
-  background: white;
-  color: black;
-  transform: rotateY(180deg);
-}
-
-.flipped {
-  transform: rotateY(180deg);
-}
-
-.back-button {
+.messages {
   margin-top: 20px;
 }
 
-button {
-  padding: 10px 20px;
-  font-size: 16px;
+.messages ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.messages li {
+  background-color: #f9f9f9;
+  margin-bottom: 5px;
+  padding: 10px;
+  border: 1px solid #ddd;
 }
 </style>

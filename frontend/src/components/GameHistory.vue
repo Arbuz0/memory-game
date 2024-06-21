@@ -1,43 +1,28 @@
 <template>
-  <div class="game-history">
-    <h1>Game History</h1>
+  <div class="container">
+    <h2>Game History</h2>
     <ul>
-      <li v-for="(game, index) in gameHistory" :key="index">
-        {{ game }}
+      <li v-for="game in gameHistory" :key="game.id">
+        {{ game.details }}
       </li>
     </ul>
-    <router-link to="/">
-      <button>Back to Main Menu</button>
-    </router-link>
   </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+
 export default {
-  name: 'GameHistory',
-  data() {
+  setup() {
+    const gameHistory = ref([]); // Fetch game history from the backend
+
+    onMounted(() => {
+      // Fetch game history from the backend
+    });
+
     return {
-      gameHistory: JSON.parse(localStorage.getItem('gameHistory')) || []
+      gameHistory,
     };
   }
 };
 </script>
-
-<style scoped>
-.game-history {
-  text-align: center;
-  margin-top: 50px;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  margin: 10px 0;
-}
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-}
-</style>

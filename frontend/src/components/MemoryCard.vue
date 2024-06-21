@@ -1,70 +1,45 @@
 <template>
   <div class="card" @click="flipCard">
-    <div :class="{'flipped': isFlipped}">
-      <div class="front">?</div>
-      <div class="back">{{ value }}</div>
-    </div>
+    <div v-if="flipped">{{ value }}</div>
+    <div v-else>?</div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'MemoryCard',
   props: {
-    value: Number,
-    isFlipped: Boolean
+    value: {
+      type: Number,
+      required: true
+    },
+    flipped: {
+      type: Boolean,
+      required: true
+    }
   },
   methods: {
     flipCard() {
-      if (!this.isFlipped) {
-        this.$emit('flip');
-      }
+      this.$emit('flip', this.value);
     }
   }
-};
+}
 </script>
 
 <style scoped>
 .card {
   width: 100px;
-  height: 100px; /* Adjust height to make the cards square */
-  perspective: 1000px;
-  cursor: pointer;
-}
-
-.card > div {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
-}
-
-.card .front,
-.card .back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
+  height: 150px;
+  margin: 10px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 2em;
+  align-items: center;
+  background-color: white;
+  border: 2px solid #4CAF50;
+  cursor: pointer;
+  user-select: none;
 }
 
-.card .front {
-  background: #2e3b4e;
-  color: white;
-}
-
-.card .back {
-  background: white;
-  color: black;
-  transform: rotateY(180deg);
-}
-
-.flipped {
-  transform: rotateY(180deg);
+.card:hover {
+  background-color: #f9f9f9;
 }
 </style>
