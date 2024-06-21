@@ -11,8 +11,22 @@
       <router-link to="/history">
         <button class="menu-button">Game History</button>
       </router-link>
-      <button @click="login" class="menu-button">Login</button>
-      <button @click="logout" class="menu-button">Logout</button>
+    </div>
+    <div class="auth-buttons">
+      <button 
+        @click="login" 
+        class="menu-button small-button" 
+        :disabled="isAuthenticated"
+      >
+        Login
+      </button>
+      <button 
+        @click="logout" 
+        class="menu-button small-button" 
+        :disabled="!isAuthenticated"
+      >
+        Logout
+      </button>
     </div>
   </div>
 </template>
@@ -22,13 +36,12 @@ import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   setup() {
-    const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+    const { loginWithRedirect, logout, isAuthenticated } = useAuth0();
 
     return {
       login: () => loginWithRedirect(),
       logout: () => logout({ returnTo: window.location.origin }),
-      isAuthenticated,
-      user
+      isAuthenticated
     };
   }
 };
@@ -56,6 +69,12 @@ h1 {
   gap: 20px;
 }
 
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 .menu-button {
   width: 200px;
   padding: 15px 0;
@@ -70,5 +89,16 @@ h1 {
 
 .menu-button:hover {
   background-color: #45a049;
+}
+
+.menu-button:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+}
+
+.small-button {
+  width: 95px;
+  padding: 10px 0;
+  font-size: 14px;
 }
 </style>
