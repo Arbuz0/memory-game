@@ -12,22 +12,29 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   setup() {
     const gameId = ref('');
     const playerName = ref('');
     const router = useRouter();
+    const { getAccessTokenSilently } = useAuth0();
 
     const joinGame = async () => {
       try {
+        const token = await getAccessTokenSilently();
         const response = await fetch('http://localhost:8080/game/connect', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ gameId: gameId.value, player: { name: playerName.value } }),
         });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const game = await response.json();
         router.push(`/game/${game.gameId}`);
       } catch (error) {

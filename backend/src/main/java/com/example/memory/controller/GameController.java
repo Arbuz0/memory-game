@@ -8,18 +8,20 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
 @AllArgsConstructor
 @RequestMapping("/game")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
 public class GameController {
     private final GameService gameService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @PostMapping("/start")
+    @PreAuthorize("hasAuthority('SCOPE_create:game')")
     public ResponseEntity<Game> start(@RequestBody Player player) {
         log.info("start game request: {}", player);
         Game game = gameService.createGame(player);
@@ -27,6 +29,7 @@ public class GameController {
     }
 
     @PostMapping("/connect")
+    @PreAuthorize("hasAuthority('SCOPE_join:game')")
     public ResponseEntity<Game> connect(@RequestBody ConnectRequest request) throws InvalidGameException {
         log.info("connect request: {}", request);
         Game game = gameService.connectToGame(request.getPlayer(), request.getGameId());
@@ -34,6 +37,7 @@ public class GameController {
     }
 
     @PostMapping("/gameplay")
+    @PreAuthorize("hasAuthority('SCOPE_update:game')")
     public ResponseEntity<GameState> gamePlay(@RequestBody PlayerAction action) throws NotFoundException, InvalidGameException {
         log.info("gameplay: {}", action);
         GameState gameState = gameService.handleGamePlay(action);
@@ -42,6 +46,7 @@ public class GameController {
     }
 
     @GetMapping("/{gameId}")
+    @PreAuthorize("hasAuthority('SCOPE_read:game')")
     public ResponseEntity<Game> getGame(@PathVariable String gameId) {
         try {
             Game game = gameService.getGame(gameId);

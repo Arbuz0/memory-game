@@ -18,19 +18,23 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   setup() {
     const playerName = ref('');
     const gameId = ref(null);
     const router = useRouter();
+    const { getAccessTokenSilently } = useAuth0();
 
     const hostGame = async () => {
       try {
+        const token = await getAccessTokenSilently();
         const response = await fetch('http://localhost:8080/game/start', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ name: playerName.value }),
         });

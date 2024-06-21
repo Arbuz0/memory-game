@@ -19,6 +19,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import MemoryCard from './MemoryCard.vue';
 import websocketService from '../services/websocket';
 import { useRoute } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   components: {
@@ -28,8 +29,9 @@ export default {
     const cards = ref([]);
     const route = useRoute();
     const gameId = route.params.id;
+    const { getAccessTokenSilently } = useAuth0();
 
-    const handleCardFlip = (index) => {
+    const handleCardFlip = async (index) => {
       console.log('Card flipped:', index);
 
       // Optimistically update the UI
@@ -42,26 +44,30 @@ export default {
 
       const playerAction = { gameId, index };
 
-      fetch(`http://localhost:8080/game/gameplay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(playerAction),
-      })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Game state updated:', data);
-          const gameState = data;
-          cards.value = gameState.board.map((value, index) => ({
-            id: index,
-            value,
-            flipped: gameState.flipped[index]
-          }));
-        })
-        .catch(error => {
-          console.error('Error updating game state:', error);
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch(`http://localhost:8080/game/gameplay`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(playerAction),
         });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('Game state updated:', data);
+        const gameState = data;
+        cards.value = gameState.board.map((value, index) => ({
+          id: index,
+          value,
+          flipped: gameState.flipped[index]
+        }));
+      } catch (error) {
+        console.error('Error updating game state:', error);
+      }
     };
 
     const onMessageReceived = (data) => {
@@ -83,21 +89,30 @@ export default {
       });
     };
 
-    onMounted(() => {
+    onMounted(async () => {
       console.log('Component mounted, establishing WebSocket connection...');
       connectWebSocket();
-      // Fetch initial game state from the backend
-      fetch(`http://localhost:8080/game/${gameId}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('Initial game state fetched:', data);
-          const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
-          cards.value = gameState.board.map((value, index) => ({
-            id: index,
-            value,
-            flipped: gameState.flipped[index]
-          }));
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch(`http://localhost:8080/game/${gameId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('Initial game state fetched:', data);
+        const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
+        cards.value = gameState.board.map((value, index) => ({
+          id: index,
+          value,
+          flipped: gameState.flipped[index]
+        }));
+      } catch (error) {
+        console.error('Error fetching initial game state:', error);
+      }
     });
 
     onBeforeUnmount(() => {

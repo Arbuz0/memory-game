@@ -11,13 +11,26 @@
       <router-link to="/history">
         <button class="menu-button">Game History</button>
       </router-link>
+      <button @click="login" class="menu-button">Login</button>
+      <button @click="logout" class="menu-button">Logout</button>
     </div>
   </div>
 </template>
 
 <script>
+import { useAuth0 } from '@auth0/auth0-vue';
+
 export default {
-  name: 'MainMenu',
+  setup() {
+    const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+
+    return {
+      login: () => loginWithRedirect(),
+      logout: () => logout({ returnTo: window.location.origin }),
+      isAuthenticated,
+      user
+    };
+  }
 };
 </script>
 
@@ -32,9 +45,9 @@ export default {
 }
 
 h1 {
-  font-size: 48px; /* Make the title font a lot bigger */
-  margin-bottom: 60px; /* Add more separation between title and buttons */
-  white-space: nowrap; /* Ensure the title is on one line */
+  font-size: 48px;
+  margin-bottom: 60px;
+  white-space: nowrap;
 }
 
 .button-container {
@@ -44,9 +57,9 @@ h1 {
 }
 
 .menu-button {
-  width: 200px; /* Make buttons equal size */
-  padding: 15px 0; /* Adjust padding to make button bigger */
-  font-size: 18px; /* Make button text bigger */
+  width: 200px;
+  padding: 15px 0;
+  font-size: 18px;
   background-color: #4CAF50;
   color: white;
   border: none;
