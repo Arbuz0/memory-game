@@ -46,7 +46,7 @@ public class GameService {
         if (game == null) {
             throw new NotFoundException("Game not found");
         }
-        game.flipCard(action.getIndex());
+        game.flipCard(action.getPlayerName(), action.getIndex());
         return game.getGameState();
     }
 }

@@ -1,21 +1,40 @@
 <template>
   <div class="container">
-    <h2>Game Page</h2>
-    <div class="scores">
-      <div class="player" v-for="player in players" :key="player.name">
-        <h3>{{ player.name }}</h3>
-        <p>Score: {{ player.score }}</p>
+    <div class="header">
+      <div class="side-scores left">
+        <div
+          class="player"
+          v-for="player in leftPlayers"
+          :key="player.name"
+          :class="{ 'current-turn': currentPlayer === player.name }"
+        >
+          <h3>{{ player.name }}</h3>
+          <p>Score: {{ player.score }}</p>
+        </div>
+      </div>
+      <h2>Game Page</h2>
+      <div class="side-scores right">
+        <div
+          class="player"
+          v-for="player in rightPlayers"
+          :key="player.name"
+          :class="{ 'current-turn': currentPlayer === player.name }"
+        >
+          <h3>{{ player.name }}</h3>
+          <p>Score: {{ player.score }}</p>
+        </div>
       </div>
     </div>
     <div class="board">
-      <MemoryCard 
-        v-for="card in cards" 
-        :key="card.id" 
+      <MemoryCard
+        v-for="card in cards"
+        :key="card.id"
         :id="card.id"
-        :image="card.image" 
-        :flipped="card.flipped" 
-        @flip="handleCardFlip" 
+        :image="card.image"
+        :flipped="card.flipped"
+        @flip="handleCardFlip"
         :is-checking="isChecking"
+        :is-current-player="isCurrentPlayer"
       />
     </div>
   </div>
@@ -23,9 +42,9 @@
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute } from 'vue-router';
 import MemoryCard from './MemoryCard.vue';
 import websocketService from '../services/websocket';
-import { useRoute } from 'vue-router';
 
 export default {
   components: {
@@ -35,12 +54,17 @@ export default {
     const cards = ref([]);
     const route = useRoute();
     const gameId = route.params.id;
+    const playerName = route.query.playerName;
     const isChecking = ref(false);
     const flippedCards = ref([]);
     const players = ref([]);
+    const currentPlayer = ref(null);
+
+    const leftPlayers = ref([]);
+    const rightPlayers = ref([]);
 
     const handleCardFlip = async (index) => {
-      if (isChecking.value || flippedCards.value.length >= 2) return;
+      if (isChecking.value || flippedCards.value.length >= 2 || playerName !== currentPlayer.value) return;
 
       // Optimistically update the UI
       cards.value = cards.value.map((card) => {
@@ -75,7 +99,7 @@ export default {
         isChecking.value = false;
       }
 
-      const playerAction = { gameId, index };
+      const playerAction = { gameId, playerName, index };
 
       fetch(`http://localhost:8080/game/gameplay`, {
         method: 'POST',
@@ -97,6 +121,8 @@ export default {
             name: player.name,
             score: player.score
           }));
+          currentPlayer.value = gameState.currentPlayer;
+          updatePlayerSides();
         } else {
           console.error('Malformed game state:', gameState);
         }
@@ -118,8 +144,20 @@ export default {
           name: player.name,
           score: player.score
         }));
+        currentPlayer.value = gameState.currentPlayer;
+        updatePlayerSides();
       } else {
         console.error('Malformed game state received from server:', gameState);
+      }
+    };
+
+    const updatePlayerSides = () => {
+      if (players.value.length > 1) {
+        leftPlayers.value = [players.value[0]];
+        rightPlayers.value = [players.value[1]];
+      } else {
+        leftPlayers.value = players.value;
+        rightPlayers.value = [];
       }
     };
 
@@ -148,6 +186,8 @@ export default {
               name: player.name,
               score: player.score
             }));
+            currentPlayer.value = gameState.currentPlayer;
+            updatePlayerSides();
           } else {
             console.error('Malformed initial game state:', gameState);
           }
@@ -165,30 +205,54 @@ export default {
       cards,
       handleCardFlip,
       isChecking,
-      players
+      players,
+      currentPlayer,
+      playerName,
+      leftPlayers,
+      rightPlayers
     };
   }
 };
 </script>
 
 <style scoped>
-h2 {
-  margin-top: 20px;
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.scores {
+.header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
+  align-items: center;
+  width: 100%;
+}
+
+.side-scores {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100px;
 }
 
 .player {
   text-align: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  width: 80px;
+}
+
+.current-turn {
+  background-color: #ffd700; /* Gold color for the current player */
 }
 
 .board {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 20px;
 }
 </style>

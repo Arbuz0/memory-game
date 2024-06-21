@@ -12,14 +12,14 @@ public final class GameState {
     private final List<Integer> board;
     private final boolean[] flipped;
     private final List<Integer> matchedCards;
-    private final boolean playerTurn;
+    private final String currentPlayer;
     private final List<PlayerState> players;
 
-    public GameState(List<Card> board, boolean[] flipped, List<Integer> matchedCards, boolean playerTurn, List<PlayerState> players) {
+    public GameState(List<Card> board, boolean[] flipped, List<Integer> matchedCards, String currentPlayer, List<PlayerState> players) {
         this.board = board.stream().map(Card::getValue).collect(Collectors.toList());
         this.flipped = flipped.clone();
         this.matchedCards = new ArrayList<>(matchedCards);
-        this.playerTurn = playerTurn;
+        this.currentPlayer = currentPlayer;
         this.players = players;
     }
 
@@ -35,8 +35,8 @@ public final class GameState {
         return Collections.unmodifiableList(matchedCards);
     }
 
-    public boolean isPlayerTurn() {
-        return playerTurn;
+    public String getCurrentPlayer() {
+        return currentPlayer;
     }
 
     public List<PlayerState> getPlayers() {

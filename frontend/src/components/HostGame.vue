@@ -45,7 +45,7 @@ export default {
     };
 
     const startGame = () => {
-      router.push(`/game/${gameId.value}`);
+      router.push({ path: `/game/${gameId.value}`, query: { playerName: playerName.value } });
     };
 
     const copyToClipboard = () => {

@@ -1,5 +1,7 @@
 package com.example.memory.model;
 
+import com.example.memory.exception.InvalidGameException;
+
 import java.util.*;
 
 public final class Game {
@@ -9,7 +11,7 @@ public final class Game {
     private final List<Card> board;
     private final boolean[] flipped;
     private final List<Integer> matchedCards = new ArrayList<>();
-    private boolean playerTurn;
+    private int currentPlayerIndex;
 
     public Game(String gameId, Player player) {
         this.gameId = gameId;
@@ -17,7 +19,7 @@ public final class Game {
         this.playerScores.put(player.getName(), 0);
         this.board = initializeBoard();
         this.flipped = new boolean[board.size()];
-        this.playerTurn = true; // The player who creates the game starts first
+        this.currentPlayerIndex = 0; // The player who creates the game starts first
     }
 
     public void addPlayer(Player player) {
@@ -45,7 +47,11 @@ public final class Game {
         return board;
     }
 
-    public void flipCard(int index) {
+    public void flipCard(String playerName, int index) throws InvalidGameException {
+        if (!players.get(currentPlayerIndex).getName().equals(playerName)) {
+            throw new InvalidGameException("It's not your turn!");
+        }
+
         if (flipped[index] || matchedCards.contains(board.get(index).getValue())) {
             return;
         }
@@ -65,14 +71,12 @@ public final class Game {
             int secondIndex = flippedIndices.get(1);
             if (board.get(firstIndex).getValue() == board.get(secondIndex).getValue()) {
                 matchedCards.add(board.get(firstIndex).getValue());
-                // Increment the score of the current player
-                Player currentPlayer = players.get(playerTurn ? 0 : 1);
-                playerScores.put(currentPlayer.getName(), playerScores.get(currentPlayer.getName()) + 1);
+                playerScores.put(playerName, playerScores.get(playerName) + 1);
             } else {
                 flipped[firstIndex] = false;
                 flipped[secondIndex] = false;
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size(); // Change turn only if the pair is wrong
             }
-            this.playerTurn = !this.playerTurn;
         }
     }
 
@@ -81,7 +85,7 @@ public final class Game {
         for (Player player : players) {
             playerStates.add(new PlayerState(player.getName(), playerScores.get(player.getName())));
         }
-        return new GameState(Collections.unmodifiableList(board), flipped.clone(), Collections.unmodifiableList(matchedCards), playerTurn, playerStates);
+        return new GameState(Collections.unmodifiableList(board), flipped.clone(), Collections.unmodifiableList(matchedCards), players.get(currentPlayerIndex).getName(), playerStates);
     }
 
     public String getGameId() {
@@ -100,8 +104,8 @@ public final class Game {
         return Collections.unmodifiableList(matchedCards);
     }
 
-    public boolean isPlayerTurn() {
-        return playerTurn;
+    public String getCurrentPlayer() {
+        return players.get(currentPlayerIndex).getName();
     }
 }
 

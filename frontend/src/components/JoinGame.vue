@@ -29,7 +29,7 @@ export default {
           body: JSON.stringify({ gameId: gameId.value, player: { name: playerName.value } }),
         });
         const game = await response.json();
-        router.push(`/game/${game.gameId}`);
+        router.push({ path: `/game/${game.gameId}`, query: { playerName: playerName.value } });
       } catch (error) {
         console.error('Error joining game:', error);
       }
