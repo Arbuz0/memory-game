@@ -24,7 +24,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.3.0")
+    implementation("org.postgresql:postgresql:42.7.3")
+    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0") // Use only Jakarta Persistence API
 }
+
 
 
 tasks.withType<Test> {

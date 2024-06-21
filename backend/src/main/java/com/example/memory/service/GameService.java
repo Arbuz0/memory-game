@@ -3,6 +3,7 @@ package com.example.memory.service;
 import com.example.memory.exception.InvalidGameException;
 import com.example.memory.exception.NotFoundException;
 import com.example.memory.model.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -12,7 +13,11 @@ import java.util.UUID;
 
 @Service
 public class GameService {
+
     private final Map<String, Game> games = Collections.synchronizedMap(new HashMap<>());
+
+    @Autowired
+    private GameHistoryService gameHistoryService;
 
     public Game createGame(Player player) {
         String gameId = UUID.randomUUID().toString();
@@ -47,6 +52,17 @@ public class GameService {
             throw new NotFoundException("Game not found");
         }
         game.flipCard(action.getPlayerName(), action.getIndex());
-        return game.getGameState();
+        GameState gameState = game.getGameState();
+
+        if (gameState.getMatchedCards().size() == 12) { // Assuming 12 pairs of cards
+            gameHistoryService.saveGameResult(
+                    game.getPlayers().get(0).getName(),
+                    game.getPlayers().get(1).getName(),
+                    gameState.getPlayers().get(0).getScore(),
+                    gameState.getPlayers().get(1).getScore()
+            );
+        }
+
+        return gameState;
     }
 }
