@@ -7,7 +7,7 @@
         :key="card.id" 
         :value="card.value" 
         :flipped="card.flipped" 
-        @flip="handleCardFlip" 
+        @flip="() => handleCardFlip(card.id)" 
       />
     </div>
   </div>
@@ -30,6 +30,15 @@ export default {
 
     const handleCardFlip = (index) => {
       console.log('Card flipped:', index);
+
+      // Optimistically update the UI
+      cards.value = cards.value.map((card) => {
+        if (card.id === index) {
+          return { ...card, flipped: !card.flipped };
+        }
+        return card;
+      });
+
       const playerAction = { gameId, index };
 
       fetch(`http://localhost:8080/game/gameplay`, {
