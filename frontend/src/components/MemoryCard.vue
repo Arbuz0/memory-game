@@ -15,11 +15,15 @@ export default {
     flipped: {
       type: Boolean,
       required: true
+    },
+    id: {
+      type: Number,
+      required: true
     }
   },
   methods: {
     flipCard() {
-      this.$emit('flip', this.value);
+      this.$emit('flip', this.id);
     }
   }
 }
@@ -28,8 +32,8 @@ export default {
 <style scoped>
 .card {
   width: 100px;
-  height: 150px;
-  margin: 10px;
+  height: 100px;
+  margin: 5px;
   display: flex;
   justify-content: center;
   align-items: center;

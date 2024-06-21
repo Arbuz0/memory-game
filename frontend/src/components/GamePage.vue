@@ -5,9 +5,10 @@
       <MemoryCard 
         v-for="card in cards" 
         :key="card.id" 
+        :id="card.id"
         :value="card.value" 
         :flipped="card.flipped" 
-        @flip="() => handleCardFlip(card.id)" 
+        @flip="handleCardFlip" 
       />
     </div>
   </div>
@@ -113,9 +114,7 @@ export default {
 </script>
 
 <style scoped>
-.board {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+h2 {
+  margin-top: 20px;
 }
 </style>
