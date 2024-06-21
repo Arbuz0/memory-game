@@ -25,11 +25,17 @@ export default {
     id: {
       type: Number,
       required: true
+    },
+    isChecking: {
+      type: Boolean,
+      required: true
     }
   },
   methods: {
     flipCard() {
-      this.$emit('flip', this.id);
+      if (!this.isChecking) {
+        this.$emit('flip', this.id);
+      }
     }
   }
 }

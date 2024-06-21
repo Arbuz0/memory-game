@@ -9,6 +9,7 @@
         :image="card.image" 
         :flipped="card.flipped" 
         @flip="handleCardFlip" 
+        :is-checking="isChecking"
       />
     </div>
   </div>
@@ -28,9 +29,11 @@ export default {
     const cards = ref([]);
     const route = useRoute();
     const gameId = route.params.id;
+    const isChecking = ref(false);
+    const flippedCards = ref([]);
 
-    const handleCardFlip = (index) => {
-      console.log('Card flipped:', index);
+    const handleCardFlip = async (index) => {
+      if (isChecking.value || flippedCards.value.length >= 2) return;
 
       // Optimistically update the UI
       cards.value = cards.value.map((card) => {
@@ -39,6 +42,36 @@ export default {
         }
         return card;
       });
+
+      // Track the flipped cards
+      flippedCards.value.push(index);
+
+      if (flippedCards.value.length === 2) {
+        isChecking.value = true;
+        const [firstIndex, secondIndex] = flippedCards.value;
+        const firstCard = cards.value.find(card => card.id === firstIndex);
+        const secondCard = cards.value.find(card => card.id === secondIndex);
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        if (firstCard.image !== secondCard.image) {
+          // Cards do not match, flip them back after 1 second
+          await delay(1000);
+          setTimeout(() => {
+            cards.value = cards.value.map((card) => {
+              if (card.id === firstIndex || card.id === secondIndex) {
+                return { ...card, flipped: false };
+              }
+              return card;
+            });
+            flippedCards.value = [];
+            isChecking.value = false;
+          }, 1000);
+        } else {
+          // Cards match, clear flippedCards and isChecking flag
+          flippedCards.value = [];
+          isChecking.value = false;
+        }
+      }
 
       const playerAction = { gameId, index };
 
@@ -49,27 +82,25 @@ export default {
         },
         body: JSON.stringify(playerAction),
       })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Game state updated:', data);
-          const gameState = data;
-          if (gameState && gameState.board && gameState.flipped) {
-            cards.value = gameState.board.map((value, index) => ({
-              id: index,
-              image: `/cards/image${value}.jpg`,
-              flipped: gameState.flipped[index]
-            }));
-          } else {
-            console.error('Malformed game state:', gameState);
-          }
-        })
-        .catch(error => {
-          console.error('Error updating game state:', error);
-        });
+      .then(response => response.json())
+      .then(data => {
+        const gameState = data;
+        if (gameState && gameState.board && gameState.flipped) {
+          cards.value = gameState.board.map((value, index) => ({
+            id: index,
+            image: `/cards/image${value}.jpg`,
+            flipped: gameState.flipped[index]
+          }));
+        } else {
+          console.error('Malformed game state:', gameState);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating game state:', error);
+      });
     };
 
     const onMessageReceived = (data) => {
-      console.log('Message received from server:', data);
       const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
       if (gameState && gameState.board && gameState.flipped) {
         cards.value = gameState.board.map((value, index) => ({
@@ -83,7 +114,6 @@ export default {
     };
 
     const connectWebSocket = () => {
-      console.log('Connecting to WebSocket...');
       websocketService.connectToSocket(gameId, onMessageReceived, () => {
         console.log('Connected to WebSocket server');
       }, (error) => {
@@ -92,13 +122,11 @@ export default {
     };
 
     onMounted(() => {
-      console.log('Component mounted, establishing WebSocket connection...');
       connectWebSocket();
       // Fetch initial game state from the backend
       fetch(`http://localhost:8080/game/${gameId}`)
         .then(response => response.json())
         .then(data => {
-          console.log('Initial game state fetched:', data);
           const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
           if (gameState && gameState.board && gameState.flipped) {
             cards.value = gameState.board.map((value, index) => ({
@@ -116,13 +144,13 @@ export default {
     });
 
     onBeforeUnmount(() => {
-      console.log('Component unmounting, disconnecting WebSocket...');
       websocketService.disconnect();
     });
 
     return {
       cards,
       handleCardFlip,
+      isChecking
     };
   }
 };
