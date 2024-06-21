@@ -6,7 +6,7 @@
         v-for="card in cards" 
         :key="card.id" 
         :id="card.id"
-        :value="card.value" 
+        :image="card.image" 
         :flipped="card.flipped" 
         @flip="handleCardFlip" 
       />
@@ -53,11 +53,15 @@ export default {
         .then(data => {
           console.log('Game state updated:', data);
           const gameState = data;
-          cards.value = gameState.board.map((value, index) => ({
-            id: index,
-            value,
-            flipped: gameState.flipped[index]
-          }));
+          if (gameState && gameState.board && gameState.flipped) {
+            cards.value = gameState.board.map((value, index) => ({
+              id: index,
+              image: `/cards/image${value}.jpg`,
+              flipped: gameState.flipped[index]
+            }));
+          } else {
+            console.error('Malformed game state:', gameState);
+          }
         })
         .catch(error => {
           console.error('Error updating game state:', error);
@@ -67,11 +71,15 @@ export default {
     const onMessageReceived = (data) => {
       console.log('Message received from server:', data);
       const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
-      cards.value = gameState.board.map((value, index) => ({
-        id: index,
-        value,
-        flipped: gameState.flipped[index]
-      }));
+      if (gameState && gameState.board && gameState.flipped) {
+        cards.value = gameState.board.map((value, index) => ({
+          id: index,
+          image: `/cards/image${value}.jpg`,
+          flipped: gameState.flipped[index]
+        }));
+      } else {
+        console.error('Malformed game state received from server:', gameState);
+      }
     };
 
     const connectWebSocket = () => {
@@ -92,11 +100,18 @@ export default {
         .then(data => {
           console.log('Initial game state fetched:', data);
           const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
-          cards.value = gameState.board.map((value, index) => ({
-            id: index,
-            value,
-            flipped: gameState.flipped[index]
-          }));
+          if (gameState && gameState.board && gameState.flipped) {
+            cards.value = gameState.board.map((value, index) => ({
+              id: index,
+              image: `/cards/image${value}.jpg`,
+              flipped: gameState.flipped[index]
+            }));
+          } else {
+            console.error('Malformed initial game state:', gameState);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching initial game state:', error);
         });
     });
 
