@@ -37,12 +37,21 @@
         :is-current-player="isCurrentPlayer"
       />
     </div>
+
+    <!-- Modal for displaying final score -->
+    <div v-if="showModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Game Over</h3>
+        <p>{{ leftPlayers[0].name }} {{ leftPlayers[0].score }} : {{ rightPlayers[0].score }} {{ rightPlayers[0].name }}</p>
+        <button @click="redirectToHome">OK</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import MemoryCard from './MemoryCard.vue';
 import websocketService from '../services/websocket';
 
@@ -53,12 +62,14 @@ export default {
   setup() {
     const cards = ref([]);
     const route = useRoute();
+    const router = useRouter();
     const gameId = route.params.id;
     const playerName = route.query.playerName;
     const isChecking = ref(false);
     const flippedCards = ref([]);
     const players = ref([]);
     const currentPlayer = ref(null);
+    const showModal = ref(false);
 
     const leftPlayers = ref([]);
     const rightPlayers = ref([]);
@@ -123,6 +134,11 @@ export default {
           }));
           currentPlayer.value = gameState.currentPlayer;
           updatePlayerSides();
+
+          // Check if the game is over
+          if (gameState.matchedCards.length === 12) { // Assuming 12 pairs of cards
+            showModal.value = true;
+          }
         } else {
           console.error('Malformed game state:', gameState);
         }
@@ -146,6 +162,11 @@ export default {
         }));
         currentPlayer.value = gameState.currentPlayer;
         updatePlayerSides();
+
+        // Check if the game is over
+        if (gameState.matchedCards.length === 12) { // Assuming 12 pairs of cards
+          showModal.value = true;
+        }
       } else {
         console.error('Malformed game state received from server:', gameState);
       }
@@ -201,6 +222,10 @@ export default {
       websocketService.disconnect();
     });
 
+    const redirectToHome = () => {
+      router.push('/');
+    };
+
     return {
       cards,
       handleCardFlip,
@@ -209,7 +234,9 @@ export default {
       currentPlayer,
       playerName,
       leftPlayers,
-      rightPlayers
+      rightPlayers,
+      showModal,
+      redirectToHome
     };
   }
 };
@@ -254,5 +281,42 @@ export default {
   grid-template-rows: repeat(4, 1fr);
   gap: 10px;
   margin-top: 20px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin-bottom: 10px;
+}
+
+.modal-content button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background-color: #45a049;
 }
 </style>

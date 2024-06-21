@@ -5,12 +5,23 @@
       <input v-model="searchQuery" type="text" placeholder="Enter player name" />
       <button @click="fetchGameHistory">Search</button>
     </div>
-    <ul v-if="gameHistory.length > 0">
-      <li v-for="game in gameHistory" :key="game.id">
-        {{ game.player1 }} vs {{ game.player2 }} - {{ game.player1Score }}:{{ game.player2Score }} ({{ new Date(game.timestamp).toLocaleString() }})
-      </li>
-    </ul>
-    <p v-else>No game history found.</p>
+    <div class="history-box">
+      <div v-if="gameHistory.length > 0" class="game-history-list">
+        <div v-for="game in gameHistory" :key="game.id" class="game-history-item">
+          <div class="players-scores">
+            <p class="player-name">{{ game.player1 }}</p>
+            <p class="player-score">{{ game.player1Score }}</p>
+            <p class="vs">:</p>
+            <p class="player-score">{{ game.player2Score }}</p>
+            <p class="player-name">{{ game.player2 }}</p>
+          </div>
+          <div class="timestamp">
+            <p>{{ new Date(game.timestamp).toLocaleString() }}</p>
+          </div>
+        </div>
+      </div>
+      <p v-else>No game history found.</p>
+    </div>
   </div>
 </template>
 
@@ -74,15 +85,43 @@ export default {
   background-color: #45a049;
 }
 
-ul {
-  list-style-type: none;
-  padding: 0;
+.history-box {
+  max-height: 400px; /* Set the max height of the box */
+  overflow-y: auto; /* Make the box scrollable */
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  background-color: #f9f9f9;
 }
 
-li {
+.game-history-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-history-item {
+  background-color: #e0f7da; /* Light green background */
   padding: 10px;
-  margin-bottom: 5px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.players-scores {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.player-name, .player-score, .vs {
+  margin: 0 5px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.timestamp {
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
 }
 </style>
