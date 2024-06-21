@@ -19,6 +19,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import MemoryCard from './MemoryCard.vue';
 import websocketService from '../services/websocket';
 import { useRoute } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   components: {
@@ -28,6 +29,8 @@ export default {
     const cards = ref([]);
     const route = useRoute();
     const gameId = route.params.id;
+    const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
+    const accessToken = ref(null);
 
     const handleCardFlip = (index) => {
       console.log('Card flipped:', index);
@@ -46,6 +49,7 @@ export default {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken.value}`,
         },
         body: JSON.stringify(playerAction),
       })
@@ -83,21 +87,32 @@ export default {
       });
     };
 
-    onMounted(() => {
+    onMounted(async () => {
       console.log('Component mounted, establishing WebSocket connection...');
-      connectWebSocket();
-      // Fetch initial game state from the backend
-      fetch(`http://localhost:8080/game/${gameId}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('Initial game state fetched:', data);
-          const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
-          cards.value = gameState.board.map((value, index) => ({
-            id: index,
-            value,
-            flipped: gameState.flipped[index]
-          }));
-        });
+      
+      if (!isAuthenticated.value) {
+        await loginWithRedirect();
+      } else {
+        accessToken.value = await getAccessTokenSilently();
+        connectWebSocket();
+
+        // Fetch initial game state from the backend
+        fetch(`http://localhost:8080/game/${gameId}`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken.value}`,
+          },
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Initial game state fetched:', data);
+            const gameState = data.gameState || data;  // Adjust to ensure compatibility with initial fetch structure
+            cards.value = gameState.board.map((value, index) => ({
+              id: index,
+              value,
+              flipped: gameState.flipped[index]
+            }));
+          });
+      }
     });
 
     onBeforeUnmount(() => {

@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,21 +22,21 @@ public class GameController {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @PostMapping("/start")
-    public ResponseEntity<Game> start(@RequestBody Player player) {
+    public ResponseEntity<Game> start(@RequestBody Player player, @AuthenticationPrincipal Jwt jwt) {
         log.info("start game request: {}", player);
         Game game = gameService.createGame(player);
         return ResponseEntity.ok(game);
     }
 
     @PostMapping("/connect")
-    public ResponseEntity<Game> connect(@RequestBody ConnectRequest request) throws InvalidGameException {
+    public ResponseEntity<Game> connect(@RequestBody ConnectRequest request, @AuthenticationPrincipal Jwt jwt) throws InvalidGameException {
         log.info("connect request: {}", request);
         Game game = gameService.connectToGame(request.getPlayer(), request.getGameId());
         return ResponseEntity.ok(game);
     }
 
     @PostMapping("/gameplay")
-    public ResponseEntity<GameState> gamePlay(@RequestBody PlayerAction action) throws NotFoundException, InvalidGameException {
+    public ResponseEntity<GameState> gamePlay(@RequestBody PlayerAction action, @AuthenticationPrincipal Jwt jwt) throws NotFoundException, InvalidGameException {
         log.info("gameplay: {}", action);
         GameState gameState = gameService.handleGamePlay(action);
         simpMessagingTemplate.convertAndSend("/topic/game-progress/" + action.getGameId(), gameState);
@@ -42,7 +44,7 @@ public class GameController {
     }
 
     @GetMapping("/{gameId}")
-    public ResponseEntity<Game> getGame(@PathVariable String gameId) {
+    public ResponseEntity<Game> getGame(@PathVariable String gameId, @AuthenticationPrincipal Jwt jwt) {
         try {
             Game game = gameService.getGame(gameId);
             return ResponseEntity.ok(game);

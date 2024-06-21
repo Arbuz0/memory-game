@@ -10,14 +10,17 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   setup() {
     const gameId = ref('');
     const playerName = ref('');
     const router = useRouter();
+    const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
+    const accessToken = ref(null);
 
     const joinGame = async () => {
       try {
@@ -25,15 +28,27 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken.value}`,
           },
           body: JSON.stringify({ gameId: gameId.value, player: { name: playerName.value } }),
         });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const game = await response.json();
         router.push(`/game/${game.gameId}`);
       } catch (error) {
         console.error('Error joining game:', error);
       }
     };
+
+    onMounted(async () => {
+      if (!isAuthenticated.value) {
+        await loginWithRedirect();
+      } else {
+        accessToken.value = await getAccessTokenSilently();
+      }
+    });
 
     return {
       gameId,
@@ -55,9 +70,9 @@ export default {
 }
 
 h1 {
-  font-size: 48px; /* Make the title font a lot bigger */
-  margin-bottom: 40px; /* Add separation between title and form */
-  white-space: nowrap; /* Ensure the title is on one line */
+  font-size: 48px;
+  margin-bottom: 40px;
+  white-space: nowrap;
 }
 
 .join-form {
@@ -69,15 +84,15 @@ h1 {
 input[type="text"] {
   padding: 10px;
   font-size: 16px;
-  width: 200px; /* Make input width consistent with buttons */
+  width: 200px;
   border: 2px solid #4CAF50;
   border-radius: 5px;
 }
 
 .menu-button {
-  width: 150px; /* Adjusted button width */
-  padding: 10px 0; /* Adjust padding to make button bigger */
-  font-size: 16px; /* Adjust button text size */
+  width: 150px;
+  padding: 10px 0;
+  font-size: 16px;
   background-color: #4CAF50;
   color: white;
   border: none;

@@ -16,21 +16,26 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
   setup() {
     const playerName = ref('');
     const gameId = ref(null);
     const router = useRouter();
+    const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
+    const accessToken = ref(null);
 
     const hostGame = async () => {
       try {
+        const token = await getAccessTokenSilently(); // Ensure token is retrieved before the request
         const response = await fetch('http://localhost:8080/game/start', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Use the token here
           },
           body: JSON.stringify({ name: playerName.value }),
         });
@@ -54,6 +59,14 @@ export default {
       });
     };
 
+    onMounted(async () => {
+      if (!isAuthenticated.value) {
+        await loginWithRedirect();
+      } else {
+        accessToken.value = await getAccessTokenSilently();
+      }
+    });
+
     return {
       playerName,
       gameId,
@@ -76,9 +89,9 @@ export default {
 }
 
 h1 {
-  font-size: 48px; /* Make the title font a lot bigger */
-  margin-bottom: 40px; /* Add separation between title and buttons */
-  white-space: nowrap; /* Ensure the title is on one line */
+  font-size: 48px;
+  margin-bottom: 40px;
+  white-space: nowrap;
 }
 
 .host-form {
@@ -91,15 +104,15 @@ h1 {
 input[type="text"] {
   padding: 10px;
   font-size: 16px;
-  width: 200px; /* Make input width consistent with buttons */
+  width: 200px;
   border: 2px solid #4CAF50;
   border-radius: 5px;
 }
 
 .menu-button {
-  width: 150px; /* Adjusted button width */
-  padding: 10px 0; /* Adjust padding to make button bigger */
-  font-size: 16px; /* Adjust button text size */
+  width: 150px;
+  padding: 10px 0;
+  font-size: 16px;
   background-color: #4CAF50;
   color: white;
   border: none;
@@ -116,7 +129,7 @@ input[type="text"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 20px; /* Add some separation between form and game info */
+  margin-top: 20px;
 }
 
 .game-id-container {
