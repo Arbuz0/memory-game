@@ -5,6 +5,7 @@ import java.util.*;
 public final class Game {
     private final String gameId;
     private final List<Player> players = new ArrayList<>();
+    private final Map<String, Integer> playerScores = new HashMap<>();
     private final List<Card> board;
     private final boolean[] flipped;
     private final List<Integer> matchedCards = new ArrayList<>();
@@ -13,6 +14,7 @@ public final class Game {
     public Game(String gameId, Player player) {
         this.gameId = gameId;
         this.players.add(player);
+        this.playerScores.put(player.getName(), 0);
         this.board = initializeBoard();
         this.flipped = new boolean[board.size()];
         this.playerTurn = true; // The player who creates the game starts first
@@ -21,6 +23,7 @@ public final class Game {
     public void addPlayer(Player player) {
         if (players.size() < 2) {
             players.add(player);
+            this.playerScores.put(player.getName(), 0);
         }
     }
 
@@ -62,6 +65,9 @@ public final class Game {
             int secondIndex = flippedIndices.get(1);
             if (board.get(firstIndex).getValue() == board.get(secondIndex).getValue()) {
                 matchedCards.add(board.get(firstIndex).getValue());
+                // Increment the score of the current player
+                Player currentPlayer = players.get(playerTurn ? 0 : 1);
+                playerScores.put(currentPlayer.getName(), playerScores.get(currentPlayer.getName()) + 1);
             } else {
                 flipped[firstIndex] = false;
                 flipped[secondIndex] = false;
@@ -71,7 +77,11 @@ public final class Game {
     }
 
     public GameState getGameState() {
-        return new GameState(Collections.unmodifiableList(board), flipped.clone(), Collections.unmodifiableList(matchedCards), playerTurn);
+        List<PlayerState> playerStates = new ArrayList<>();
+        for (Player player : players) {
+            playerStates.add(new PlayerState(player.getName(), playerScores.get(player.getName())));
+        }
+        return new GameState(Collections.unmodifiableList(board), flipped.clone(), Collections.unmodifiableList(matchedCards), playerTurn, playerStates);
     }
 
     public String getGameId() {
@@ -92,5 +102,23 @@ public final class Game {
 
     public boolean isPlayerTurn() {
         return playerTurn;
+    }
+}
+
+class PlayerState {
+    private final String name;
+    private final int score;
+
+    public PlayerState(String name, int score) {
+        this.name = name;
+        this.score = score;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getScore() {
+        return score;
     }
 }

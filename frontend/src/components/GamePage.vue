@@ -1,6 +1,12 @@
 <template>
   <div class="container">
     <h2>Game Page</h2>
+    <div class="scores">
+      <div class="player" v-for="player in players" :key="player.name">
+        <h3>{{ player.name }}</h3>
+        <p>Score: {{ player.score }}</p>
+      </div>
+    </div>
     <div class="board">
       <MemoryCard 
         v-for="card in cards" 
@@ -31,6 +37,7 @@ export default {
     const gameId = route.params.id;
     const isChecking = ref(false);
     const flippedCards = ref([]);
+    const players = ref([]);
 
     const handleCardFlip = async (index) => {
       if (isChecking.value || flippedCards.value.length >= 2) return;
@@ -56,21 +63,16 @@ export default {
         if (firstCard.image !== secondCard.image) {
           // Cards do not match, flip them back after 1 second
           await delay(1000);
-          setTimeout(() => {
-            cards.value = cards.value.map((card) => {
-              if (card.id === firstIndex || card.id === secondIndex) {
-                return { ...card, flipped: false };
-              }
-              return card;
-            });
-            flippedCards.value = [];
-            isChecking.value = false;
-          }, 1000);
-        } else {
-          // Cards match, clear flippedCards and isChecking flag
-          flippedCards.value = [];
-          isChecking.value = false;
+          cards.value = cards.value.map((card) => {
+            if (card.id === firstIndex || card.id === secondIndex) {
+              return { ...card, flipped: false };
+            }
+            return card;
+          });
         }
+
+        flippedCards.value = [];
+        isChecking.value = false;
       }
 
       const playerAction = { gameId, index };
@@ -91,6 +93,10 @@ export default {
             image: `/cards/image${value}.jpg`,
             flipped: gameState.flipped[index]
           }));
+          players.value = gameState.players.map((player) => ({
+            name: player.name,
+            score: player.score
+          }));
         } else {
           console.error('Malformed game state:', gameState);
         }
@@ -107,6 +113,10 @@ export default {
           id: index,
           image: `/cards/image${value}.jpg`,
           flipped: gameState.flipped[index]
+        }));
+        players.value = gameState.players.map((player) => ({
+          name: player.name,
+          score: player.score
         }));
       } else {
         console.error('Malformed game state received from server:', gameState);
@@ -134,6 +144,10 @@ export default {
               image: `/cards/image${value}.jpg`,
               flipped: gameState.flipped[index]
             }));
+            players.value = gameState.players.map((player) => ({
+              name: player.name,
+              score: player.score
+            }));
           } else {
             console.error('Malformed initial game state:', gameState);
           }
@@ -150,7 +164,8 @@ export default {
     return {
       cards,
       handleCardFlip,
-      isChecking
+      isChecking,
+      players
     };
   }
 };
@@ -159,5 +174,21 @@ export default {
 <style scoped>
 h2 {
   margin-top: 20px;
+}
+
+.scores {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.player {
+  text-align: center;
+}
+
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 </style>
